@@ -1,0 +1,750 @@
+<html>
+	<head>
+		<title>Messenger Launch Site - Sample - Tic Tac Toe</title>
+		<meta http-equiv="Content-Language" content="en-us">
+		<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+		<script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script>
+		<style>
+			BODY { background-color: #ffffff; }
+			TD.header { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 10pt; }
+			TD.headerInfo { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 8pt; color: #cccccc; }
+			TD.headerPlayerTop { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 10pt; background-color: #006600; color: #66CC66; font-weight: Bold; }
+			TD.headerPlayer { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 10pt; background-color: #006600; color: #66CC66; }
+			TD.headerRoundTitle { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 12pt; color: #993333; font-weight: Bold; text-align: center; }
+			TD.headerRoundNum { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 16pt; color: #993333; font-weight: Bold; text-align: center; }
+			TH.scoreboardName { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 10pt; font-weight: bold;text-align: center;}
+			TH.scoreboardPoint { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 10pt; font-weight: normal;text-align: center;}
+			TD.scoreboardName { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 10pt; color=#9999FF; font-weight: normal;text-align: center;}
+			TD.scoreboardPoint { font-family : Verdana, Geneva, Arial, Helvetica, sans-serif; font-size : 10pt; color=#9999FF; font-weight: bold;text-align: center;}
+			TD.banner { font-family : Verdana;font-size : 12pt;	font-weight : Bold;}
+			TH.debugOutput { background-color: #eeeeee; font-family : Small Fonts; font-size : 7pt;	}
+			TD.debugOutput { background-color: #cccccc; font-family : Small Fonts; font-size : 7pt;	}
+		</style>
+		<SCRIPT LANGUAGE="javascript">
+
+			function Dump()
+			{
+				if( typeof window.external == 'undefined' )
+				{
+					console.log('window.external: undefined');
+				}
+				else
+				{
+					if( typeof window.external.Channel == 'undefined' )
+					{
+						console.log('window.external.Channel: undefined');
+					}
+					else
+					{
+						console.log('window.external.Channel.Data: ' + window.external.Channel.Data);
+						console.log('window.external.Channel.Error: ' + window.external.Channel.Error);
+						console.log('window.external.Channel.FileInfo: ' + window.external.Channel.FileInfo);
+						console.log('window.external.Channel.Type: ' + window.external.Channel.Type + '(' + (( window.external.Channel.Type == 0 ) ? 'Direct' : (( window.external.Channel.Type == 1 ) ? 'Indirect' : (( window.external.Channel.Type == 2 ) ? 'Disconnected' : 'Unknown'))) + ')');
+						console.log('window.external.Channel.IM: ' + window.external.Channel.IM);
+					}
+
+					console.log('----------');
+
+					if( typeof window.external.Error == 'undefined' )
+					{
+						console.log('window.external.Error: undefined');
+					}
+					else
+					{
+						console.log('window.external.Error.Type: ' + window.external.Error.Type);
+						console.log('window.external.Error.Data: ' + window.external.Error.Data);
+					}
+
+					console.log('----------');
+
+					if( typeof window.external.Channel.FileInfo == 'undefined' )
+					{
+						console.log('window.external.Channel.FileInfo: undefined');
+					}
+					else
+					{
+						console.log('window.external.Channel.FileInfo.Path: ' + window.external.Channel.FileInfo.Path);
+						console.log('window.external.Channel.FileInfo.Size: ' + window.external.Channel.FileInfo.Size);
+						console.log('window.external.Channel.FileInfo.Progress: ' + window.external.Channel.FileInfo.Progress);
+						console.log('window.external.Channel.FileInfo.Incoming: ' + window.external.Channel.FileInfo.Incoming);
+						console.log('window.external.Channel.FileInfo.Status: ' + window.external.Channel.FileInfo.Status + '(' + (( window.external.Channel.FileInfo.Status == 0 ) ? 'NotStarted' : (( window.external.Channel.FileInfo.Status == 1 ) ? 'InProgress' : (( window.external.Channel.FileInfo.Status == 2 ) ? 'Cancelled' : (( window.external.Channel.FileInfo.Status == 3 ) ? 'Transferred' : 'Unknown')))) + ')');
+					}
+
+					console.log('----------');
+
+					if( typeof window.external.Users == 'undefined' )
+					{
+						console.log('window.external.Users: undefined');
+					}
+					else
+					{
+						console.log('window.external.Users.Count: ' + window.external.Users.Count);
+						console.log('----------');
+
+						DumpUser('Me', window.external.Users.Me);
+						DumpUser('Inviter', window.external.Users.Inviter);
+
+						for( var i = 0; i < window.external.Users.Count; i ++ )
+						{
+							DumpUser(i, window.external.Users.Item(i));
+						}
+					}
+				}
+			}
+
+			function DumpUser(i, User)
+			{
+				console.log('User(' + i + ').EMail: ' + User.EMail);
+				console.log('User(' + i + ').GlobalIP: ' + User.GlobalIP);
+				console.log('User(' + i + ').LocalIP: ' + User.LocalIP);
+				console.log('User(' + i + ').Name: ' + User.Name);
+				console.log('User(' + i + ').PUID: ' + User.PUID);
+				console.log('----------');
+			}
+
+			// set up browser event handlers
+			window.onload = OnLoadEvent;
+
+			// define game states
+			var GameOver = 0;
+			var GameOn = 1;
+			var WaitForReplay = 2;
+
+			// global game variables
+			var iBuildNum = "011";
+
+			var TokenArray = new Array;
+			var ImageArray = new Array;
+			var arrWinnerPos = new Array;
+
+			var gsXprefix = "images/";
+			var gsOprefix = "images/";
+			var gEmpty = new Image();
+
+			var fRemoteAppLoaded = false;
+			var giTurn = 0;
+			var GameState = 0;
+			var gPreviousConnectionType = 2;
+			var gCurrentConnectionType;
+			var MyTurn = 0;
+			var gsOpponentName;
+
+			// global scores
+			var giRoundNum;
+			var player1Points;
+			var player1Streak;
+			var player2Points;
+			var player2Streak;
+
+			// Redraws the upper table, with player names and round number.
+			// Called at startup, OnRemoteAppLoaded, OnRemoteAppClosed, OnTypeChanged.
+			function updateHeader()
+			{
+				console.log('updateHeader');
+
+				L_sRoundTitle_Text = "Round";
+
+				if( giRoundNum )
+				{
+					hRoundTitle.innerHTML = L_sRoundTitle_Text;
+					hRoundNum.innerHTML = giRoundNum;
+				}
+				else
+				{
+					hRoundTitle.innerHTML = "&nbsp;";
+					hRoundNum.innerHTML = "&nbsp;";
+				}
+
+				hPlayer1.innerHTML = TokenArray[0];
+				hPlayer2.innerHTML = TokenArray[1];
+
+				hBuildNum.innerHTML = "Build " + iBuildNum ;
+				switch( window.external.Channel.Type )
+				{
+					case 0:
+						hConnectType.innerHTML = "1:1"; break;
+					case 1:
+						hConnectType.innerHTML = "1--1"; break;
+					case 2:
+						hConnectType.innerHTML = "-X-"; break;
+				}
+			}
+
+			// Redraws the scoreboard in the lower table with player names, scores, and winning streaks.
+			// Called at startup, OnRemoteAppStarted, OnRemoteAppClosed, and in UpdateGame.
+			function updateScoreboard()
+			{
+				console.log('updateScoreboard');
+
+				namePlayer1.innerHTML = TokenArray[0];
+				namePlayer2.innerHTML = TokenArray[1];
+				pointsPlayer1.innerHTML = player1Points;
+				streakPlayer1.innerHTML = player1Streak;
+				pointsPlayer2.innerHTML = player2Points;
+				streakPlayer2.innerHTML = player2Streak;
+			}
+
+			// This event fires when the connection between conversants changes from direct to indirect or disconnected.
+			// The new value of window.external.Channel.Type is displayed by updateHeader.
+			// If Channel.Type has changed from Indirect or Direct to Disconnected, the game is over.
+			function Channel_OnTypeChanged()
+			{
+				console.log('Channel_OnTypeChanged:' + window.external.Channel.Type);
+
+				gCurrentChannelType = window.external.Channel.Type;
+				if( (gPreviousConnectionType != 2) && (gCurrentConnectionType == 2) )
+				{
+					setGameOver();
+				}
+				else
+				{
+					gPreviousConnectionType = gCurrentConnectionType;
+				}
+				updateHeader();
+			}
+
+			// This event is fired when the remote application fires the Channel.Initialize function.
+			// The order of synchronization is:
+			// First application to load:		Second application to load:
+			// Initialize						(not ready) A remote signal, OnRemoteAppLoaded, is queued
+			// OnRemoteAppLoaded				Initialize
+			// Both connections are ready to receive data.
+			function Channel_OnRemoteAppLoaded()
+			{
+				console.log('Channel_OnRemoteAppLoaded');
+
+				fRemoteAppLoaded = true;
+				ResetCells();
+				updateHeader();
+				updateScoreboard();
+				BannerOut(L_sLetsPlay_Text.replace(/%1/, TokenArray[giTurn])); // "Let's play! [Playername] goes first."
+				GameState = GameOn;
+			}
+
+			// Called from OnRemoteAppClosed, OnDataError, OnTypeChanged.
+			function setGameOver()
+			{
+				console.log('setGameOver');
+
+				BannerOut(L_sLeavesGame_Text.replace(/%1/, gsOpponentName));
+				fRemoteAppLoaded = false;
+				GameState = GameOver;
+				updateHeader();
+				updateScoreboard();
+			}
+
+			// This event is fired when the remote user closes the window that contains the app.
+			// Disable any controls that may send data, because data sent to a closed channel causes an error.
+			function Channel_OnRemoteAppClosed()
+			{
+				console.log('Channel_OnRemoteAppClosed');
+
+				setGameOver();
+			}
+
+			// This event is fired when the remote user closes the application or the conversation window,
+			// or signs out of Messenger.
+			function Channel_OnAppClose()
+			{
+				console.log('Channel_OnAppClose');
+
+				if( fRemoteAppLoaded )
+				{
+					SafeSendData("GONE");
+				}
+			}
+
+			// This event is fired when data is received from the remote application using Channel.SendData.
+			// Inspect the value of Channel.Data.
+			function Channel_OnDataReceived()
+			{
+				console.log('Channel_OnDataReceived: ' + window.external.Channel.Data);
+
+				var myData;
+
+				myData=window.external.Channel.Data;
+				if( myData == "READY" )
+				{
+					if( GameState != GameOn )
+					{
+						if( GameState == GameOver )
+						{
+							SafeSendData("READY");
+						}
+						Channel_OnRemoteAppLoaded();
+					}
+				}
+				else
+				{
+					OnRemotePlay(window.external.Channel.Data);
+				}
+			}
+
+			// This event fires when data was not successfully transmitted.
+			// It could take several seconds for the application to detect the unsuccessful transmission.
+			// The object Channel.Error.Type is an integer representing the type of error.
+			// The object Channel.Error.Data contains the data that could not be sent.
+			// In this game, if there is an error then the game ends.
+			//	var myError = window.external.Channel.Error;
+			//	var myRetry = myError.Data;
+			function Channel_OnDataError()
+			{
+				console.log('Channel_OnDataError: ' + window.external.Channel.Error.Data);
+
+				setGameOver();
+			}
+
+			// OnRemotePlay is called from Channel.OnDataReceived.  The remote player has clicked on a
+			// cell, and the play is communicated to this application.  This application can determine
+			// if it's a valid square, and update the game state if it is.  If the data received is not
+			// a valid turn, or the turn is received while it's the local player's turn, the data is
+			// discarded.
+			function OnRemotePlay(ChannelData)
+			{
+				console.log('OnRemotePlay: ' + ChannelData);
+
+				// string to number convertion, doesn't touch channel data
+				for( CellPosition = 0; CellPosition <= 9; CellPosition ++ )
+				{
+					if( CellPosition.toString() == ChannelData )
+					{
+						break;
+					}
+				}
+				// if it's valid turn data
+				if( CellPosition != 9 )
+				{
+					if( giTurn != MyTurn )
+					{
+					// and it's the remote player's turn
+						UpdateGame(GetGridTable().cells[CellPosition], giTurn);
+					}
+				}
+			}
+
+			// Returns the user object that is not User.Me.
+			function GetRemoteUser(usercollection)
+			{
+				console.log('GetRemoteUser');
+
+				for( index = 0; index < usercollection.Count; index ++ )
+				{
+					if( usercollection.me != usercollection.Item(index) )
+					{
+						return( usercollection.Item(index) );
+					}
+				}
+				return( usercollection.me );
+			}
+
+			function GetGridTable()
+			{
+				console.log('GetGridTable');
+
+				return( document.getElementById("tblGrid") );
+			}
+
+			// GetImages loads the images that will be shown during the game.
+			// The grid can be displayed in the body of the document because it does not change,
+			// but the symbols need to be dynamic, and preloaded for performance.
+			function GetImages()
+			{
+				console.log('GetImages');
+
+				ImageArray[0] = new Image();
+				ImageArray[1] = new Image();
+				ImageArray[2] = new Image();
+				ImageArray[3] = new Image();
+				ImageArray[0].src = gsXprefix + "redx.bmp"
+				ImageArray[1].src = gsOprefix + "redo.bmp"
+				ImageArray[2].src = gsXprefix + "redxanim.gif"
+				ImageArray[3].src = gsOprefix + "redoanim.gif"
+				gEmpty.src = "empty.gif";
+			}
+
+			// OnLoadEvent is defined at the top of this script as the function that should be called
+			// when the document has completed loading, using the window.onload event.
+			// This function initializes variables, and determines who is the inviter and who plays first.
+			// This function calls Channel.Initialize, which is an essential step in getting
+			// applications to run together.
+			function OnLoadEvent()
+			{
+				console.log('OnLoadEvent');
+
+				var L_sRemoteName_Text = "Remote Player";
+				var L_sLocalName_Text = "Local Player";
+				var sInviter = "%1 is the inviter.";
+				var sRemoteName;
+				var sLocalName;
+
+				var Users = window.external.Users;
+
+				sRemoteName = GetRemoteUser(Users).Name;
+				if( !sRemoteName.length )
+				{
+					sRemoteName = L_sRemoteName_Text;
+				}
+				gsOpponentName = sRemoteName;
+
+				sLocalName = Users.Me.Name;
+				if( !sLocalName.length )
+				{
+					sLocalName = L_sLocalName_Text;
+				}
+
+				if( Users.Me == Users.Inviter )
+				{
+					TokenArray[0] = sLocalName;
+					TokenArray[1] = sRemoteName;
+					MyTurn = 0;
+				}
+				else
+				{
+					TokenArray[0] = sRemoteName;
+					TokenArray[1] = sLocalName;
+					MyTurn = 1;
+				}
+
+				var Table = GetGridTable();
+
+				GetImages();
+
+				giRoundNum = 0;
+
+				player1Points = 0;
+				player2Points = 0;
+				player1Streak = 0;
+				player2Streak = 0;
+
+				L_sTakesTurn_Text = "%1 Turn";
+				L_sPlayerWins_Text = "%1 Wins! Click here to play again.";
+				L_sTieGame_Text = "Draw! Click here to play again.";
+				L_sWaitingFor_Text = "Waiting for %1 to join.";
+				L_sWaitRematch_Text = "Waiting for rematch.";
+				L_sLetsPlay_Text = "Let's play! %1 goes first.";
+				L_sLeavesGame_Text = "%1 has left the game! Game Over";
+
+				updateHeader();
+				updateScoreboard();
+
+				if( fRemoteAppLoaded == false )
+				{
+					BannerOut(L_sWaitingFor_Text.replace(/%1/, gsOpponentName));
+				}
+				window.external.Channel.Initialize();
+			}
+
+			function SwitchTurn()
+			{
+				console.log('SwitchTurn');
+
+				giTurn = ( giTurn == 0 ) ? 1 : 0;
+			}
+
+			function ResetCells()
+			{
+				console.log('ResetCells');
+
+				for( i = 0; i < 9; i ++ )
+				{
+					GetGridTable().cells[i].State = i + 2;
+					GetGridTable().cells[i].firstChild.src = gEmpty.src;
+					GetGridTable().cells[i].firstChild.style.cursor = "hand";
+				}
+				giRoundNum ++;
+				GameState = GameOn;
+				giTurn = (giRoundNum + 1) % 2;
+				BannerOut(L_sTakesTurn_Text.replace(/%1/, TokenArray[giTurn]));
+			}
+
+			// Called from UpdateGame to determine if board is full.
+			function IsOver()
+			{
+				console.log('IsOver');
+
+				var ret = true;
+				for( i = 0; i < 9; i ++ )
+				{
+					if( GetGridTable().cells[i].State == i + 2 )
+					{
+						ret = false;
+						break;
+					}
+				}
+				return( ret );
+			}
+
+			// Called when user clicks on Banner text.
+			// If there is a remote connection, and a game is over, starts a new game.
+			function OutTextClicked()
+			{
+				console.log('OutTextClicked');
+
+				if( fRemoteAppLoaded )
+				{
+					if( GameState == GameOver )
+					{
+						SafeSendData("READY");
+						GameState = WaitForReplay;
+						BannerOut(L_sWaitRematch_Text); // "Waiting for replay."
+					}
+				}
+			}
+
+			// Called from UpdateGame to determine if either player has three symbols in a row.
+			function Winner()
+			{
+				console.log('Winner');
+
+				var DJ = 4;
+				// check the diagonals
+				for( i = 0; i < 3; i += 2)
+				{
+					if( GetGridTable().cells[i].State == GetGridTable().cells[i + DJ].State && GetGridTable().cells[i + DJ].State == GetGridTable().cells[i + DJ * 2].State )
+					{
+						arrWinnerPos[0] = i;
+						arrWinnerPos[1] = i + DJ;
+						arrWinnerPos[2] = i + DJ * 2
+						return( true );
+					}
+					DJ /= 2;
+				}
+
+				for( i = 0; i < 3; i ++ )
+				{
+					// check the rows
+					if( GetGridTable().cells[i * 3].State == GetGridTable().cells[i * 3 + 1].State && GetGridTable().cells[i * 3 + 1].State == GetGridTable().cells[i * 3 + 2].State )
+					{
+						arrWinnerPos[0] = i * 3;
+						arrWinnerPos[1] = i * 3 + 1;
+						arrWinnerPos[2] = i * 3 + 2;
+						return( true );
+					}
+					// check the columns
+					else if( GetGridTable().cells[i].State == GetGridTable().cells[i + 3].State && GetGridTable().cells[i].State == GetGridTable().cells[i + 6].State )
+					{
+						arrWinnerPos[0] = i;
+						arrWinnerPos[1] = i + 3;
+						arrWinnerPos[2] = i + 6
+						return( true );
+					}
+				}
+				return( false );
+			}
+
+			// IsCellEmpty function is called from OnCellClick to determine whether the cell the local player
+			// has clicked on is empty.
+			function IsCellEmpty(cell)
+			{
+				console.log('IsCellEmpty: ' + cell);
+
+				if( cell.State != 0 && cell.State != 1 )
+				{
+					return( true );
+				}
+				else
+				{
+					return( false );
+				}
+			}
+
+			// SafeSendData is SendData with an error-handler.
+			function SafeSendData(toSend)
+			{
+				console.log('SafeSendData: ' + toSend);
+
+				try
+				{
+					window.external.Channel.SendData(toSend);
+				}
+				catch( ex )
+				{
+					console.log("SafeSendData failed. " + ex.description);
+				}
+			}
+
+			// SendPlay is called from OnCellClick.
+			// It sends the location that was clicked to the remote application.
+			function SendPlay(CellPosition)
+			{
+				console.log('SendPlay: ' + CellPosition);
+
+				SafeSendData(CellPosition.toString());
+			}
+
+			// MarkCell takes a grid 'cell' object, and replaces the empty image with the symbol of the player,
+			// passed by 'cturn'
+			function MarkCell(cell, cturn)
+			{
+				console.log('MarkCell: ' + cell + ', ' + cturn);
+
+				cell.firstChild.src = ImageArray[cturn].src;
+				cell.firstChild.style.cursor = "auto";
+				cell.State = cturn;
+			}
+
+			// UpdateGame is called from OnRemotePlay and OnCellClick.  It marks the provided cell number
+			// with the player's symbol, and checks to see if there are three in a row, or if the board is
+			// full with no winner.  If the game is over, the scoreboard and header displays are updated,
+			// and the banner is changed to a link to click for rematch.
+			// If there is a winner, the three winning symbols are replaced with animated symbols.
+			function UpdateGame(cell, cturn)
+			{
+				console.log('UpdateGame: ' + cell + ', ' + cturn);
+
+				MarkCell(cell, cturn);
+				if( Winner() )
+				{
+					for( i = 0; i < 3; i ++ )
+					{
+						GetGridTable().cells[arrWinnerPos[i]].firstChild.src = ImageArray[2 + cturn].src;
+					}
+
+					if( giTurn == 0 )
+					{
+						player2Streak = 0;
+						player1Streak ++;
+						player1Points ++;
+					}
+					else
+					{
+						player2Streak ++;
+						player2Points ++;
+						player1Streak = 0;
+					}
+
+					GameState = GameOver;
+					BannerOut(L_sPlayerWins_Text.replace(/%1/, TokenArray[giTurn]));
+					updateScoreboard();
+				}
+				else
+				{
+					if( IsOver() )
+					{
+						GameState = GameOver;
+						BannerOut(L_sTieGame_Text);
+						updateScoreboard();
+					}
+					else
+					{
+						SwitchTurn();
+						BannerOut(L_sTakesTurn_Text.replace(/%1/, TokenArray[giTurn]));
+					}
+				}
+			}
+
+			// BannerOut displays a provided message in the area below the game grid.
+			// Messages display one at a time, new messages overwrite previous messages.
+			function BannerOut(str)
+			{
+				console.log('BannerOut: ' + str);
+
+				txtBanner.innerText = str;
+			}
+
+			// OnCellClick allows the local player to mark a cell, if there is a game in progress,
+			// and it is the local player's turn, and the cell is empty.
+			function OnCellClick(cell)
+			{
+				console.log('OnCellClick: ' + cell);
+
+				if( giTurn == MyTurn && GameState == GameOn && IsCellEmpty(cell) )
+				{
+					// an empty cell state contains its position + 2
+					var CellPosition = cell.State - 2;
+					UpdateGame(cell, MyTurn);
+					SendPlay(CellPosition);
+				}
+			}
+
+		</SCRIPT>
+	</head>
+	<body>
+		<div id="divHeader" align="center">
+			<center>
+				<TABLE id="header" cellSpacing="3" cellPadding="3" width="210" border="0">
+					<tr>
+						<TD class="headerPlayerTop" colspan="2" noWrap id="01">Players</TD>
+					</tr>
+					<tr>
+						<TD class="headerPlayer" noWrap width="50%" id="hPlayer1">&nbsp;</TD>
+						<TD class="headerPlayer" noWrap width="50%" id="hPlayer2">&nbsp;</TD>
+					</tr>
+					<tr>
+						<TD class="headerRoundTitle" colspan="2" noWrap id="hRoundTitle">&nbsp;</TD>
+					</tr>
+					<tr>
+						<TD class="headerRoundNum" colspan="2" noWrap id="hRoundNum">&nbsp;</TD>
+					</tr>
+				</TABLE>
+			</center>
+		</div>
+		<br>
+		<div id="divPlayArea" align="center">
+			<CENTER>
+				<table id="tblLabel" border="0" cellpadding="0" cellspacing="0" style="BORDER-COLLAPSE: collapse" bordercolor="#111111" width="60" height="20">
+					<tr>
+						<td id="30" align="middle">
+							<IMG style="BACKGROUND-COLOR: white" src="label.bmp" width="210" height="70" id="31">
+						</td>
+					</tr>
+				</table>
+				<table id="tblGrid" border="0" cellpadding="0" cellspacing="0" style="BORDER-COLLAPSE: collapse" bordercolor="#111111" width="210" height="210" background="grid.gif">
+					<TBODY>
+						<tr>
+							<td class="grid" id="cell0" onclick="OnCellClick(this)" width="33%" height="33%" align="middle"><img id="10" src="empty.gif"></td>
+							<td class="grid" id="cell1" onclick="OnCellClick(this)" width="33%" height="33%" align="middle"><img id="11" src="empty.gif"></td>
+							<td class="grid" id="cell2" onclick="OnCellClick(this)" width="33%" height="33%" align="middle"><img id="12" src="empty.gif"></td>
+							</td>
+						</tr>
+						<tr>
+							<td class="grid" id="cell3" onclick="OnCellClick(this)" width="33%" height="33%" align="middle"><img id="13" src="empty.gif"></td>
+							<td class="grid" id="cell4" onclick="OnCellClick(this)" width="33%" height="33%" align="middle"><img id="14" src="empty.gif"></td>
+							<td class="grid" id="cell5" onclick="OnCellClick(this)" width="33%" height="33%" align="middle"><img id="15" src="empty.gif"></td>
+						</tr>
+						<tr>
+							<td class="grid" id="cell6" onclick="OnCellClick(this)" width="33%" height="33%" align="middle"><img id="16" src="empty.gif"></td>
+							<td class="grid" id="cell7" onclick="OnCellClick(this)" width="33%" height="33%" align="middle"><img id="17" src="empty.gif"></td>
+							<td class="grid" id="cell8" onclick="OnCellClick(this)" width="33%" height="33%" align="middle"><img id="18" src="empty.gif"></td>
+						</tr>
+					</TBODY>
+				</table>
+				<table border="0" cellpadding="0" cellspacing="0" style="BORDER-COLLAPSE: collapse" bordercolor="#111111" width="210" id="tblBanner" height="70">
+					<tr>
+						<td class="banner" id="txtBanner" onclick="OutTextClicked()" width="99%" height="33%" align="middle" colspan="3"></td>
+					</tr>
+				</table>
+			</CENTER>
+		</div>
+		<br>
+		<div id="divScoreboard" align="center">
+			<TABLE id="Table2" cellSpacing="1" cellPadding="1" width="210" border="0">
+				<TR>
+					<TH class="scoreboardName" id="40">
+						Score</TH>
+					<TH class="scoreboardPoint" id="41">
+						Points</TH>
+					<TH class="scoreboardPoint" id="42">
+						Streak</TH>
+				</TR>
+				<TR>
+					<TD class="scoreboardName" nowrap id="namePlayer1">&nbsp;</TD>
+					<TD class="scoreboardPoint" id="pointsPlayer1" width="50">&nbsp;</TD>
+					<TD class="scoreboardPoint" id="streakPlayer1" width="50">&nbsp;</TD>
+				</TR>
+				<TR>
+					<TD class="scoreboardName" nowrap id="namePlayer2">&nbsp;</TD>
+					<TD class="scoreboardPoint" id="pointsPlayer2" width="50">&nbsp;</TD>
+					<TD class="scoreboardPoint" id="streakPlayer2" width="50">&nbsp;</TD>
+				</TR>
+			</TABLE>
+		</div>
+		<br><br><br><br><br><br>
+		<table border="0">
+			<TR>
+				<td class="headerInfo" noWrap id="hBuildNum">&nbsp;</td>
+				<TD class="headerInfo" noWrap id="hConnectType">&nbsp;</TD>
+			</TR>
+		</table>
+	</body>
+</html>
